@@ -4,21 +4,37 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
 
 const RENDER_URL = "https://printsync-backend.onrender.com";
-const MERCHANT_ID = "RISHAV_STORE_001"; // Your unique ID
+<div className="...">ID: {merchantId}</div>
 
 export default function App() {
   const [files, setFiles] = useState<any[]>([]);
   const [live, setLive] = useState(false);
+  // 1. Define dynamic state for the Merchant ID
+  const [merchantId, setMerchantId] = useState<string>('');
 
+  // 2. Initialize ID on component mount
   useEffect(() => {
+    const savedId = localStorage.getItem('printsync_merchant_id');
+    if (savedId) {
+      setMerchantId(savedId);
+    } else {
+      // Generate a unique ID if one doesn't exist
+      const newId = `store_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('printsync_merchant_id', newId);
+      setMerchantId(newId);
+    }
+  }, []);
+
+  // 3. Polling Effect - Only runs when merchantId is defined
+  useEffect(() => {
+    if (!merchantId) return;
+
     const poll = setInterval(async () => {
       try {
-        // Use the bulletproof route we KNOW the backend responds to
-        const res = await fetch(`${RENDER_URL}/api/documents/merchant-status/${MERCHANT_ID}`);
+        const res = await fetch(`${RENDER_URL}/api/documents/merchant-status/${merchantId}`);
         if (res.ok) {
           const data = await res.json();
           
-          // Read the specific shape of the merchant-status response
           if (data.ready && data.sessionId) {
             setFiles([{
               id: data.sessionId,
@@ -35,8 +51,9 @@ export default function App() {
         setLive(false); 
       }
     }, 3000);
+
     return () => clearInterval(poll);
-  }, []);
+  }, [merchantId]); // This runs whenever merchantId changes
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans">
@@ -53,9 +70,10 @@ export default function App() {
         {/* QR Section */}
         <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 flex flex-col items-center h-fit">
           <div className="bg-white p-3 rounded-xl mb-4 shadow-[0_0_30px_-5px_rgba(59,130,246,0.6)]">
-            <QRCodeCanvas value={MERCHANT_ID} size={150} />
+            {/* QR Code updates dynamically with merchantId */}
+            {merchantId && <QRCodeCanvas value={merchantId} size={150} />}
           </div>
-          <p className="text-xs text-slate-500 uppercase font-bold">Terminal ID: {MERCHANT_ID}</p>
+          <p className="text-xs text-slate-500 uppercase font-bold">Terminal ID: {merchantId || 'Generating...'}</p>
         </div>
 
         {/* Queue Section */}
