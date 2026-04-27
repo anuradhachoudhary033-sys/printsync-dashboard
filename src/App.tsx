@@ -3,29 +3,27 @@ import { Download, FileText, File } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
 
-const RENDER_URL = "https://printsync-backend.onrender.com";
-<div className="...">ID: {merchantId}</div>
+// Use environment variable or fallback to your backend URL
+const RENDER_URL = import.meta.env.VITE_API_URL || 'https://printsync-backend.onrender.com';
 
 export default function App() {
   const [files, setFiles] = useState<any[]>([]);
   const [live, setLive] = useState(false);
-  // 1. Define dynamic state for the Merchant ID
   const [merchantId, setMerchantId] = useState<string>('');
 
-  // 2. Initialize ID on component mount
+  // 1. Initialize Merchant ID from localStorage or generate a new one
   useEffect(() => {
     const savedId = localStorage.getItem('printsync_merchant_id');
     if (savedId) {
       setMerchantId(savedId);
     } else {
-      // Generate a unique ID if one doesn't exist
       const newId = `store_${Math.random().toString(36).substring(2, 9)}`;
       localStorage.setItem('printsync_merchant_id', newId);
       setMerchantId(newId);
     }
   }, []);
 
-  // 3. Polling Effect - Only runs when merchantId is defined
+  // 2. Poll the backend only after merchantId is set
   useEffect(() => {
     if (!merchantId) return;
 
@@ -51,9 +49,9 @@ export default function App() {
         setLive(false); 
       }
     }, 3000);
-
+    
     return () => clearInterval(poll);
-  }, [merchantId]); // This runs whenever merchantId changes
+  }, [merchantId]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans">
@@ -70,10 +68,11 @@ export default function App() {
         {/* QR Section */}
         <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 flex flex-col items-center h-fit">
           <div className="bg-white p-3 rounded-xl mb-4 shadow-[0_0_30px_-5px_rgba(59,130,246,0.6)]">
-            {/* QR Code updates dynamically with merchantId */}
             {merchantId && <QRCodeCanvas value={merchantId} size={150} />}
           </div>
-          <p className="text-xs text-slate-500 uppercase font-bold">Terminal ID: {merchantId || 'Generating...'}</p>
+          <p className="text-xs text-slate-500 uppercase font-bold">
+            Terminal ID: {merchantId || 'Generating...'}
+          </p>
         </div>
 
         {/* Queue Section */}
